@@ -251,7 +251,7 @@ glyphicon glyphicon-plus-sign"></span> Add Participator</h3>
       function query_user(id) {
         var xmlhttp = new XMLHttpRequest();
         xmlhttp.onreadystatechange = function(argument) {
-          if (xmlhttp.status == 200) {
+          if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
             var obj = $.parseJSON(xmlhttp.responseText);
             for (i in obj) {
               var toappend = $('#new_meeting_select_id_' + String(id));
