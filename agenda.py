@@ -7,8 +7,6 @@ from AgendaService import AgendaService
 from hashlib import md5
 from ConfigParser import ConfigParser
 
-app = Flask(__name__)
-
 def get_db():
     if not hasattr(g, 'mysql_db'):
         g.mysql_db = torndb.Connection(g.dbhost, g.dbname, g.dbuser, g.dbpasswd)
@@ -19,6 +17,9 @@ def generate_response(status, message):
         'status': status,
         'message': message
     })
+
+app = Flask(__name__)
+
 
 @app.teardown_appcontext
 def close_db(error):
@@ -46,18 +47,25 @@ with app.app_context():
 def initialize():
     conf = ConfigParser()
     conf.read('agenda.conf')
+
+@app.before_request
+def make_session_permanent():
     g.dbhost = conf.get('Agenda', 'DB_HOST')
     g.dbname = conf.get('Agenda', 'DB_NAME')
     g.dbuser = conf.get('Agenda', 'DB_USER')
     g.dbpasswd = conf.get('Agenda', 'DB_PASSWORD')
+    g.service = AgendaService(get_db())
     if not hasattr(g, 'service'):
         g.service = AgendaService(get_db())
-
-@app.before_request
-def make_session_permanent():
     session.permanent = True
     app.permanent_session_lifetime = timedelta(minutes=10)
 
+@app.route('/query_all_users', methods=['POST', 'GET'])
+def query_all_users():
+    if 'username' in session:
+        ret = g.service.listAllUsers()
+        return json.dumps(ret)
+    return generate_response('ER', 'Not logged in')
 
 @app.route('/query_meeting_member', methods=['POST', 'GET'])
 def query_meeting_member():
@@ -120,19 +128,19 @@ def dologin():
     if 'username' in session:
         return redirect(url_for('meetings'))
     if request.method == 'POST':
-        try:
-            m = md5()
-            m.update(request.form['password'])
-            psw = m.hexdigest()
-            if g.service.logIn(username=request.form['username'], password=psw):
-                session['username'] = request.form['username']
-                return redirect(url_for('meetings'))
-            else:
-                flash("Error username or password", "error")
-                return redirect(url_for('login'))
-        except:
-            flash("Unexpected error occurred.", "error")
+    # try:
+        m = md5()
+        m.update(request.form['password'])
+        psw = m.hexdigest()
+        if g.service.logIn(username=request.form['username'], password=psw):
+            session['username'] = request.form['username']
+            return redirect(url_for('meetings'))
+        else:
+            flash("Error username or password", "error")
             return redirect(url_for('login'))
+    # except:
+        flash("Unexpected error occurred.", "error")
+        return redirect(url_for('login'))
     return redirect(url_for('login'))
 
 
