@@ -269,7 +269,7 @@ glyphicon glyphicon-plus-sign"></span> Add Participator</h3>
         var par_list = $('#newMeetingModal #participators_list');
         var first_ele = $('#newMeetingModal #participators_list select:first-child');
         var last_ele = $('#newMeetingModal #participators_list select:last-child');
-        var add_par = $('<select type="text" class="form-control" name="participators"></select>')
+        var add_par = $('<select class="form-control" name="participators"></select>')
         last_ele.removeClass("tail");
         last_ele.addClass("mid");
         par_list.append(add_par);
@@ -279,8 +279,8 @@ glyphicon glyphicon-plus-sign"></span> Add Participator</h3>
           first_ele.removeClass('single');
           first_ele.addClass('head');
         }
-        add_par.attr("id", 'new_meeting_select_id_' + String(count));
         count++;
+        add_par.attr("id", 'new_meeting_select_id_' + String(count));
         query_user(count);
       });
 
