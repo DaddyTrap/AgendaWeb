@@ -63,7 +63,11 @@ def make_session_permanent():
 @app.route('/query_all_users', methods=['POST', 'GET'])
 def query_all_users():
     if 'username' in session:
-        ret = g.service.listAllUsers()
+        try:
+            ret = g.service.listAllUsers()
+        except Exception, e:
+            print e
+            return generate_response('ER', 'Unexpected Error')
         return json.dumps(ret)
     return generate_response('ER', 'Not logged in')
 
@@ -73,19 +77,23 @@ def query_meeting_member():
         # If logged in
         if 'title' in request.form:
             # If postdata correct
-            info = g.service.getMeetingInfo(request.form['title'])
-            # info = test_info
-            if info:
-                # Info is not None
-                ret = {
-                    'sponsor': info['sponsor'],
-                    'participators': info['participators'],
-                    'status': "OK"
-                }
-                return json.dumps(ret)
-            else:
-                # Info is None
-                return generate_response('ER', 'No this meeting')
+            try:
+                info = g.service.getMeetingInfo(request.form['title'])
+                # info = test_info
+                if info:
+                    # Info is not None
+                    ret = {
+                        'sponsor': info['sponsor'],
+                        'participators': info['participators'],
+                        'status': "OK"
+                    }
+                    return json.dumps(ret)
+                else:
+                    # Info is None
+                    return generate_response('ER', 'No this meeting')
+            except Exception, e:
+                print e
+                return generate_response('ER', 'Unexpected Error')
         else:
             # postdata wrong
             return generate_response('ER', 'No title in form data')
@@ -128,19 +136,19 @@ def dologin():
     if 'username' in session:
         return redirect(url_for('meetings'))
     if request.method == 'POST':
-    # try:
-        m = md5()
-        m.update(request.form['password'])
-        psw = m.hexdigest()
-        if g.service.logIn(username=request.form['username'], password=psw):
-            session['username'] = request.form['username']
-            return redirect(url_for('meetings'))
-        else:
-            flash("Error username or password", "error")
+        try:
+            m = md5()
+            m.update(request.form['password'])
+            psw = m.hexdigest()
+            if g.service.logIn(username=request.form['username'], password=psw):
+                session['username'] = request.form['username']
+                return redirect(url_for('meetings'))
+            else:
+                flash("Error username or password", "error")
+                return redirect(url_for('login'))
+        except:
+            flash("Unexpected error occurred.", "error")
             return redirect(url_for('login'))
-    # except:
-        flash("Unexpected error occurred.", "error")
-        return redirect(url_for('login'))
     return redirect(url_for('login'))
 
 
@@ -267,6 +275,7 @@ def meetings():
             return render_template('meetings.html', allMeetings=allMeetings, sponsorMeetings=sponsorMeetings, invitedMeetings=invitedMeetings, recentMeetings=recentMeetings, pastMeetings=pastMeetings)
         except:
             flash("Unexpected Error Occured", "error")
+            return redirect(url_for(login))
 
     flash("Please log in first", 'error')
     return redirect(url_for('login'))
@@ -274,9 +283,13 @@ def meetings():
 
 @app.route('/users')
 def users():
-    allUsers = g.service.listAllUsers()
     if 'username' in session:
-        return render_template('users.html', allUsers=allUsers)
+        try:
+            allUsers = g.service.listAllUsers()
+            return render_template('users.html', allUsers=allUsers)
+        except Exception, e:
+            flash("Unexpected Error occurred.", "error")
+            print e
     flash("Please log in first", 'error')
     return redirect(url_for('login'))
 
@@ -284,8 +297,11 @@ def users():
 @app.route('/profile')
 def profile():
     if 'username' in session:
-        li = g.service.queryUser(username=session['username'])
-        return render_template('profile.html', email=li[0]['email'], phone=li[0]['phone'])
+        try:
+            li = g.service.queryUser(username=session['username'])
+            return render_template('profile.html', email=li[0]['email'], phone=li[0]['phone'])
+        except Exception, e:
+            flash("Unexpected Error Occured.", "error")
     flash("Please log in first", 'error')
     return redirect(url_for('login'))
 
